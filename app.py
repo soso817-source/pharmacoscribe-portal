@@ -3,6 +3,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RTD87BESY9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RTD87BESY9');
+</script>
 # Page Configuration
 st.set_page_config(
     page_title="PharmacoScribe | Tri-Pillar Oncology Safety Engine",
