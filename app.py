@@ -1,17 +1,9 @@
 import os
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-RTD87BESY9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-RTD87BESY9');
-</script>
 # Page Configuration
 st.set_page_config(
     page_title="PharmacoScribe | Tri-Pillar Oncology Safety Engine",
@@ -20,10 +12,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom High-Contrast Styling
+# Google Analytics 4 (GA4)
+ga_code = """
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RTD87BESY9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RTD87BESY9');
+</script>
+"""
+components.html(ga_code, height=0, width=0)
+
+# Custom High-Contrast Styling & Header Stripping
 st.markdown("""
 <style>
     .block-container { padding-top: 1.8rem; padding-bottom: 2.5rem; }
+    
+    /* Hide Streamlit Header, Main Menu & GitHub elements */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppDeployButton {display:none;}
+    [data-testid="stToolbar"] {display: none;}
+    [data-testid="stDecoration"] {display: none;}
+    [data-testid="stStatusWidget"] {display: none;}
     
     /* Header Card */
     .hero-box {
@@ -75,15 +88,20 @@ st.markdown("""
         text-align: center;
         margin-top: 14px;
     }
-    append css
-    /* Hide Streamlit Header, Main Menu & GitHub Fork/View buttons */
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-footer {visibility: hidden;}
-.stAppDeployButton {display:none;}
-[data-testid="stToolbar"] {display: none;}
-[data-testid="stDecoration"] {display: none;}
-[data-testid="stStatusWidget"] {display: none;}
+    
+    /* Action Button Styling */
+    .mail-btn {
+        display: inline-block;
+        background-color: #0284c7;
+        color: #ffffff !important;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: background-color 0.2s ease;
+    }
+    .mail-btn:hover { background-color: #0369a1; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,13 +125,25 @@ if df_faers.empty:
     st.error("Master datasets pending loading. Please ensure CSVs are present.")
     st.stop()
 
-# Header Banner
-st.markdown("""
-<div class="hero-box">
-    <div class="hero-title">🧬 PharmacoScribe</div>
-    <div class="hero-subtitle">Tri-Pillar Oncopharmacovigilance, PGx Biomarkers & Quantitative Safety Engine</div>
-</div>
-""", unsafe_allow_html=True)
+# Header Banner with Client Login Action
+col_head1, col_head2 = st.columns([4, 1])
+with col_head1:
+    st.markdown("""
+    <div class="hero-box">
+        <div class="hero-title">🧬 PharmacoScribe</div>
+        <div class="hero-subtitle">Tri-Pillar Oncopharmacovigilance, PGx Biomarkers & Quantitative Safety Engine</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_head2:
+    st.write("")
+    st.write("")
+    with st.popover("🔐 Client Portal Log In", use_container_width=True):
+        st.subheader("Partner Access")
+        user_email = st.text_input("Work Email:", placeholder="name@institution.com")
+        user_pass = st.text_input("Access Token / Password:", type="password")
+        if st.button("Authenticate", use_container_width=True):
+            st.info("Portal authorization is managed via enterprise SSO. Contact sales@pharmacoscribe.com for API provisioning.")
 
 # Controls
 drugs_list = sorted(df_faers['Drug'].dropna().unique().tolist())
@@ -194,12 +224,18 @@ with col3:
     """, unsafe_allow_html=True)
 
 st.write("")
-st.markdown("""
-<div style="background:#064e3b; border:1px solid #059669; padding:18px 24px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+
+# Inquiry & Commercial Contact Bar (Direct Email to sales@pharmacoscribe.com)
+st.markdown(f"""
+<div style="background:#0f172a; border:1px solid #334155; padding:20px 24px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
     <div>
-        <div style="color:#a7f3d0; font-size:1.1rem; font-weight:700;">Regulatory & Commercial Safety Dossier</div>
-        <div style="color:#6ee7b7; font-size:0.88rem; margin-top:2px;">Includes full MedDRA term contingency matrices, CPIC genotype-directed dosing protocols, and structural target binding profiles.</div>
+        <div style="color:#f8fafc; font-size:1.15rem; font-weight:700;">Regulatory & Clinical Safety Dossier Requests</div>
+        <div style="color:#94a3b8; font-size:0.9rem; margin-top:3px;">Custom MedDRA contingency breakdowns, CPIC protocol integration, and audit-ready reports.</div>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:#ecfdf5; white-space:nowrap; margin-left:20px;">€490.00 <span style="font-size:0.8rem; font-weight:normal; color:#a7f3d0;">/ molecule</span></div>
+    <div>
+        <a class="mail-btn" href="mailto:sales@pharmacoscribe.com?subject=Dossier Inquiry: {selected_drug} - {selected_event}&body=Hello PharmacoScribe Team,%0D%0A%0D%0AI would like to request an audit dossier for {selected_drug} regarding {selected_event}.%0D%0A%0D%0AOrganization:%0D%0AContact:">
+            ✉️ Contact Sales / Request Dossier
+        </a>
+    </div>
 </div>
 """, unsafe_allow_html=True)
