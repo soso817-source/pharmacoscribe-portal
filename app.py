@@ -3,11 +3,70 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="PharmacoScribe | Onco-Safety Portal", layout="wide")
+# Page Configuration
+st.set_page_config(
+    page_title="PharmacoScribe | Tri-Pillar Oncology Safety Engine",
+    page_icon="🧬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.title("🔬 PharmacoScribe")
-st.caption("Tri-Pillar Oncopharmacovigilance, PGx & Biophysics Intelligence Platform")
+# Custom Styling (Dark-slate glassmorphism & clinical card layout)
+st.markdown("""
+<style>
+    /* Global font & background tweaks */
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; }
+    
+    /* Header Card */
+    .hero-box {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        margin-bottom: 20px;
+    }
+    .hero-title { font-size: 2.2rem; font-weight: 800; color: #38bdf8; margin: 0; }
+    .hero-subtitle { color: #94a3b8; font-size: 0.95rem; margin-top: 4px; }
+    
+    /* Pillar Metric Cards */
+    .metric-card {
+        background: #1e293b;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        height: 100%;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .pillar-header { font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+    .p-pv { color: #38bdf8; }
+    .p-pgx { color: #c084fc; }
+    .p-lit { color: #fbbf24; }
+    
+    /* Signal Badges */
+    .signal-badge-pass {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #059669;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 10px;
+    }
+    .signal-badge-warn {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #dc2626;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
+# 1. Load Data
 @st.cache_data
 def load_datasets():
     faers_file = "master_faers_index.csv"
@@ -24,29 +83,34 @@ def load_datasets():
 df_faers, df_pubmed = load_datasets()
 
 if df_faers.empty:
-    st.warning("Master FAERS dataset is loading or pending file upload.")
+    st.error("Master datasets pending loading. Please ensure CSVs are present.")
     st.stop()
 
-# 1. Molecule Dropdown
+# Header Banner
+st.markdown("""
+<div class="hero-box">
+    <div class="hero-title">🧬 PharmacoScribe</div>
+    <div class="hero-subtitle">Tri-Pillar Oncopharmacovigilance, PGx Biomarkers & Quantitative Safety Engine</div>
+</div>
+""", unsafe_allow_html=True)
+
+# Controls
 drugs_list = sorted(df_faers['Drug'].dropna().unique().tolist())
+c_sel1, c_sel2 = st.columns(2)
 
-col_input1, col_input2 = st.columns(2)
-with col_input1:
-    selected_drug = st.selectbox("Select Target Molecule (49 Available):", drugs_list)
+with c_sel1:
+    selected_drug = st.selectbox("Select Target Molecule (49 Tracked):", drugs_list)
 
-# 2. Dynamic Adverse Event Dropdown for Selected Drug
 drug_df = df_faers[df_faers['Drug'] == selected_drug]
 available_events = sorted([e for e in drug_df['Adverse_Event'].dropna().unique().tolist() if e != "NAN"])
 
-with col_input2:
+with c_sel2:
     if available_events:
-        selected_event = st.selectbox("Select Adverse Event (Reported MedDRA PT):", available_events)
+        selected_event = st.selectbox("Adverse Event (Reported MedDRA PT):", available_events)
     else:
-        selected_event = st.text_input("Adverse Event (MedDRA PT Term):", "MUCOSITIS").strip().upper()
+        selected_event = st.text_input("Adverse Event:", "MUCOSITIS").strip().upper()
 
-st.divider()
-
-# 3. Real-Time Disproportionality Computation
+# Statistical Core
 a_raw = len(drug_df[drug_df['Adverse_Event'] == selected_event])
 b_raw = len(drug_df[drug_df['Adverse_Event'] != selected_event])
 c_raw, d_raw = 5, 500
@@ -59,36 +123,62 @@ ci_low = np.exp(np.log(ror) - 1.96 * se)
 ci_high = np.exp(np.log(ror) + 1.96 * se)
 is_signal = (prr >= 2.0 and a_raw >= 3 and ci_low > 1.0)
 
-# 4. Display 3 Pillars
+# Display 3 Pillar Cards
 col1, col2, col3 = st.columns(3)
+
 with col1:
-    st.subheader("1. Pharmacovigilance")
-    st.metric(label="Target Event Cases (a)", value=f"{a_raw} cases")
-    st.write(f"**PRR:** `{prr:.2f}`")
-    st.write(f"**ROR:** `{ror:.2f}` (95% CI: `[{ci_low:.2f} - {ci_high:.2f}]`)")
-    if is_signal:
-        st.error("⚠️ DISPROPORTIONATE SIGNAL DETECTED")
-    else:
-        st.success("✅ NO UNEXPECTED SIGNAL")
+    badge_html = f'<div class="signal-badge-warn">⚠️ DISPROPORTIONATE SIGNAL DETECTED</div>' if is_signal else f'<div class="signal-badge-pass">✅ NO UNEXPECTED DISPROPORTIONALITY</div>'
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="pillar-header p-pv">1. Pharmacovigilance (FAERS)</div>
+        <p style="margin:0; color:#94a3b8; font-size:0.85rem;">Target Event Cases (a):</p>
+        <h2 style="margin:0; color:#f8fafc; font-size:2rem;">{a_raw}</h2>
+        <hr style="border-color:#334155; margin:12px 0;">
+        <p style="margin:4px 0; font-size:0.9rem;"><strong>PRR:</strong> <code style="color:#38bdf8;">{prr:.2f}</code></p>
+        <p style="margin:4px 0; font-size:0.9rem;"><strong>ROR:</strong> <code style="color:#38bdf8;">{ror:.2f}</code> <span style="font-size:0.75rem; color:#94a3b8;">(95% CI: [{ci_low:.2f} - {ci_high:.2f}])</span></p>
+        {badge_html}
+    </div>
+    """, unsafe_allow_html=True)
 
 with col2:
-    st.subheader("2. PGx Susceptibility")
     pgx_kb = {
         "METHOTREXATE": [("SLCO1B1", "rs4149056", "1A", "Severe clearance reduction & AUC surge"), ("MTHFR", "rs1801133", "1A", "High mucositis & bone marrow toxicity")],
         "FLUOROURACIL": [("DPYD", "*2A / *13", "1A", "Lethal systemic toxicity, severe neutropenia")],
         "TAMOXIFEN": [("CYP2D6", "*4, *5, *10", "1A", "Sub-therapeutic endoxifen bioactivation")]
     }
     entries = pgx_kb.get(selected_drug, [("TPMT / NUDT15", "Tier 1A", "1A", "High risk of severe myelosuppression")])
-    for g, v, t, eff in entries:
-        st.markdown(f"- **{g}** (`{v}`) — *Tier {t}*\n  _{eff}_")
+    pgx_items = "".join([f"<li style='margin-bottom:8px;'><strong>{g}</strong> (<code>{v}</code>) — <span style='color:#c084fc; font-size:0.8rem;'>Tier {t}</span><br><span style='color:#94a3b8; font-size:0.85rem;'>{eff}</span></li>" for g, v, t, eff in entries])
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="pillar-header p-pgx">2. PGx Susceptibility (CPIC)</div>
+        <ul style="padding-left:18px; margin:0;">
+            {pgx_items}
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col3:
-    st.subheader("3. Literature Evidence")
     pm_records = df_pubmed[df_pubmed['Drug'].str.upper() == selected_drug] if not df_pubmed.empty else pd.DataFrame()
-    st.write(f"**Citations Indexed:** `{len(pm_records)}`")
-    if not pm_records.empty:
-        valid_titles = pm_records['Title'].dropna().tolist()
-        st.caption(f"**Top Citation:** {valid_titles[0] if valid_titles else 'Abstract available in full dossier'}")
+    valid_titles = pm_records['Title'].dropna().tolist() if not pm_records.empty else []
+    top_title = valid_titles[0] if valid_titles else "Comprehensive clinical abstract compiled in audit dossier."
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="pillar-header p-lit">3. Literature Evidence (NCBI)</div>
+        <p style="margin:0; color:#94a3b8; font-size:0.85rem;">Indexed Systematic Citations:</p>
+        <h2 style="margin:0; color:#fbbf24; font-size:2rem;">{len(pm_records)}</h2>
+        <hr style="border-color:#334155; margin:12px 0;">
+        <p style="color:#94a3b8; font-size:0.85rem; margin:0;"><strong>Top Citation:</strong></p>
+        <p style="font-size:0.85rem; color:#cbd5e1; font-style:italic; margin-top:4px;">{top_title}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.divider()
-st.info("💳 **Commercial Tier:** Audit-Ready Comprehensive Dossier — **€490.00** *(Stripe EUR Delivery Ready)*")
+st.write("")
+st.markdown("""
+<div style="background:#064e3b; border:1px solid #059669; padding:16px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+    <div>
+        <strong style="color:#a7f3d0; font-size:1.05rem;">Regulatory & Commercial Safety Dossier</strong>
+        <p style="margin:0; color:#6ee7b7; font-size:0.85rem;">Includes full MedDRA term matrices, CPIC genotype-directed dosing protocols, and structural target binding profiles.</p>
+    </div>
+    <div style="font-size:1.4rem; font-weight:800; color:#ecfdf5;">€490.00 <span style="font-size:0.8rem; font-weight:normal; color:#a7f3d0;">/ molecule</span></div>
+</div>
+""", unsafe_allow_html=True)
