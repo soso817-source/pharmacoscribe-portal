@@ -66,6 +66,15 @@ st.markdown("""
         text-align: center;
         margin-top: 14px;
     }
+    append css
+    /* Hide Streamlit Header, Main Menu & GitHub Fork/View buttons */
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+.stAppDeployButton {display:none;}
+[data-testid="stToolbar"] {display: none;}
+[data-testid="stDecoration"] {display: none;}
+[data-testid="stStatusWidget"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
