@@ -11,57 +11,60 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling (Dark-slate glassmorphism & clinical card layout)
+# Custom High-Contrast Styling
 st.markdown("""
 <style>
-    /* Global font & background tweaks */
-    .block-container { padding-top: 2rem; padding-bottom: 3rem; }
+    .block-container { padding-top: 1.8rem; padding-bottom: 2.5rem; }
     
     /* Header Card */
     .hero-box {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 24px;
-        border-radius: 12px;
+        padding: 22px 26px;
+        border-radius: 10px;
         border: 1px solid #334155;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
     }
-    .hero-title { font-size: 2.2rem; font-weight: 800; color: #38bdf8; margin: 0; }
-    .hero-subtitle { color: #94a3b8; font-size: 0.95rem; margin-top: 4px; }
+    .hero-title { font-size: 2.1rem; font-weight: 800; color: #38bdf8; margin: 0; }
+    .hero-subtitle { color: #cbd5e1; font-size: 0.95rem; margin-top: 5px; }
     
     /* Pillar Metric Cards */
     .metric-card {
         background: #1e293b;
-        padding: 20px;
+        padding: 22px;
         border-radius: 10px;
         border: 1px solid #334155;
-        height: 100%;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        min-height: 290px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     }
-    .pillar-header { font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+    .pillar-header { font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 14px; }
     .p-pv { color: #38bdf8; }
     .p-pgx { color: #c084fc; }
     .p-lit { color: #fbbf24; }
     
+    .card-label { color: #cbd5e1; font-size: 0.88rem; font-weight: 500; }
+    .card-stat { color: #ffffff; font-size: 2.2rem; font-weight: 800; margin: 4px 0 10px 0; }
+    .stat-row { color: #f1f5f9; font-size: 0.92rem; margin: 6px 0; }
+    
     /* Signal Badges */
     .signal-badge-pass {
-        background: rgba(16, 185, 129, 0.15);
+        background: rgba(16, 185, 129, 0.18);
         color: #34d399;
-        padding: 6px 12px;
+        padding: 8px 12px;
         border-radius: 6px;
         border: 1px solid #059669;
         font-weight: 700;
         text-align: center;
-        margin-top: 10px;
+        margin-top: 14px;
     }
     .signal-badge-warn {
-        background: rgba(239, 68, 68, 0.15);
+        background: rgba(239, 68, 68, 0.18);
         color: #f87171;
-        padding: 6px 12px;
+        padding: 8px 12px;
         border-radius: 6px;
         border: 1px solid #dc2626;
         font-weight: 700;
         text-align: center;
-        margin-top: 10px;
+        margin-top: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -110,7 +113,9 @@ with c_sel2:
     else:
         selected_event = st.text_input("Adverse Event:", "MUCOSITIS").strip().upper()
 
-# Statistical Core
+st.write("")
+
+# Statistical Calculations
 a_raw = len(drug_df[drug_df['Adverse_Event'] == selected_event])
 b_raw = len(drug_df[drug_df['Adverse_Event'] != selected_event])
 c_raw, d_raw = 5, 500
@@ -131,23 +136,22 @@ with col1:
     st.markdown(f"""
     <div class="metric-card">
         <div class="pillar-header p-pv">1. Pharmacovigilance (FAERS)</div>
-        <p style="margin:0; color:#94a3b8; font-size:0.85rem;">Target Event Cases (a):</p>
-        <h2 style="margin:0; color:#f8fafc; font-size:2rem;">{a_raw}</h2>
-        <hr style="border-color:#334155; margin:12px 0;">
-        <p style="margin:4px 0; font-size:0.9rem;"><strong>PRR:</strong> <code style="color:#38bdf8;">{prr:.2f}</code></p>
-        <p style="margin:4px 0; font-size:0.9rem;"><strong>ROR:</strong> <code style="color:#38bdf8;">{ror:.2f}</code> <span style="font-size:0.75rem; color:#94a3b8;">(95% CI: [{ci_low:.2f} - {ci_high:.2f}])</span></p>
+        <div class="card-label">Target Event Cases (a):</div>
+        <div class="card-stat">{a_raw}</div>
+        <div class="stat-row"><strong>PRR:</strong> <span style="color:#38bdf8; font-weight:700; margin-left:6px;">{prr:.2f}</span></div>
+        <div class="stat-row"><strong>ROR:</strong> <span style="color:#38bdf8; font-weight:700; margin-left:6px;">{ror:.2f}</span> <span style="font-size:0.8rem; color:#94a3b8;">(95% CI: [{ci_low:.2f} - {ci_high:.2f}])</span></div>
         {badge_html}
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     pgx_kb = {
-        "METHOTREXATE": [("SLCO1B1", "rs4149056", "1A", "Severe clearance reduction & AUC surge"), ("MTHFR", "rs1801133", "1A", "High mucositis & bone marrow toxicity")],
-        "FLUOROURACIL": [("DPYD", "*2A / *13", "1A", "Lethal systemic toxicity, severe neutropenia")],
+        "METHOTREXATE": [("SLCO1B1", "rs4149056", "1A", "Severe clearance reduction & systemic AUC surge"), ("MTHFR", "rs1801133", "1A", "Elevated mucositis & bone marrow suppression")],
+        "FLUOROURACIL": [("DPYD", "*2A / *13", "1A", "Lethal systemic toxicity, severe neutropenia & diarrhea")],
         "TAMOXIFEN": [("CYP2D6", "*4, *5, *10", "1A", "Sub-therapeutic endoxifen bioactivation")]
     }
-    entries = pgx_kb.get(selected_drug, [("TPMT / NUDT15", "Tier 1A", "1A", "High risk of severe myelosuppression")])
-    pgx_items = "".join([f"<li style='margin-bottom:8px;'><strong>{g}</strong> (<code>{v}</code>) — <span style='color:#c084fc; font-size:0.8rem;'>Tier {t}</span><br><span style='color:#94a3b8; font-size:0.85rem;'>{eff}</span></li>" for g, v, t, eff in entries])
+    entries = pgx_kb.get(selected_drug, [("TPMT / NUDT15", "Tier 1A", "1A", "Elevated risk of severe early-onset myelosuppression")])
+    pgx_items = "".join([f"<li style='margin-bottom:10px; color:#f8fafc;'><strong style='color:#f8fafc;'>{g}</strong> (<code style='color:#38bdf8;'>{v}</code>) — <span style='background:#581c87; color:#e9d5ff; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:700;'>Tier {t}</span><br><span style='color:#cbd5e1; font-size:0.85rem;'>{eff}</span></li>" for g, v, t, eff in entries])
     st.markdown(f"""
     <div class="metric-card">
         <div class="pillar-header p-pgx">2. PGx Susceptibility (CPIC)</div>
@@ -160,25 +164,24 @@ with col2:
 with col3:
     pm_records = df_pubmed[df_pubmed['Drug'].str.upper() == selected_drug] if not df_pubmed.empty else pd.DataFrame()
     valid_titles = pm_records['Title'].dropna().tolist() if not pm_records.empty else []
-    top_title = valid_titles[0] if valid_titles else "Comprehensive clinical abstract compiled in audit dossier."
+    top_title = valid_titles[0] if valid_titles else "Comprehensive clinical abstract and systematic citations compiled in full audit dossier."
     st.markdown(f"""
     <div class="metric-card">
         <div class="pillar-header p-lit">3. Literature Evidence (NCBI)</div>
-        <p style="margin:0; color:#94a3b8; font-size:0.85rem;">Indexed Systematic Citations:</p>
-        <h2 style="margin:0; color:#fbbf24; font-size:2rem;">{len(pm_records)}</h2>
-        <hr style="border-color:#334155; margin:12px 0;">
-        <p style="color:#94a3b8; font-size:0.85rem; margin:0;"><strong>Top Citation:</strong></p>
-        <p style="font-size:0.85rem; color:#cbd5e1; font-style:italic; margin-top:4px;">{top_title}</p>
+        <div class="card-label">Indexed Systematic Citations:</div>
+        <div class="card-stat" style="color:#fbbf24;">{len(pm_records)}</div>
+        <div class="card-label" style="margin-top:10px;"><strong>Top Citation:</strong></div>
+        <div style="font-size:0.84rem; color:#e2e8f0; font-style:italic; line-height:1.4; margin-top:4px;">{top_title}</div>
     </div>
     """, unsafe_allow_html=True)
 
 st.write("")
 st.markdown("""
-<div style="background:#064e3b; border:1px solid #059669; padding:16px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+<div style="background:#064e3b; border:1px solid #059669; padding:18px 24px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
     <div>
-        <strong style="color:#a7f3d0; font-size:1.05rem;">Regulatory & Commercial Safety Dossier</strong>
-        <p style="margin:0; color:#6ee7b7; font-size:0.85rem;">Includes full MedDRA term matrices, CPIC genotype-directed dosing protocols, and structural target binding profiles.</p>
+        <div style="color:#a7f3d0; font-size:1.1rem; font-weight:700;">Regulatory & Commercial Safety Dossier</div>
+        <div style="color:#6ee7b7; font-size:0.88rem; margin-top:2px;">Includes full MedDRA term contingency matrices, CPIC genotype-directed dosing protocols, and structural target binding profiles.</div>
     </div>
-    <div style="font-size:1.4rem; font-weight:800; color:#ecfdf5;">€490.00 <span style="font-size:0.8rem; font-weight:normal; color:#a7f3d0;">/ molecule</span></div>
+    <div style="font-size:1.4rem; font-weight:800; color:#ecfdf5; white-space:nowrap; margin-left:20px;">€490.00 <span style="font-size:0.8rem; font-weight:normal; color:#a7f3d0;">/ molecule</span></div>
 </div>
 """, unsafe_allow_html=True)
