@@ -27,16 +27,26 @@ if df_faers.empty:
     st.warning("Master FAERS dataset is loading or pending file upload.")
     st.stop()
 
-drugs_list = sorted(df_faers['Drug'].unique().tolist())
-col_input1, col_input2 = st.columns([1, 2])
+# 1. Molecule Dropdown
+drugs_list = sorted(df_faers['Drug'].dropna().unique().tolist())
+
+col_input1, col_input2 = st.columns(2)
 with col_input1:
     selected_drug = st.selectbox("Select Target Molecule (49 Available):", drugs_list)
+
+# 2. Dynamic Adverse Event Dropdown for Selected Drug
+drug_df = df_faers[df_faers['Drug'] == selected_drug]
+available_events = sorted([e for e in drug_df['Adverse_Event'].dropna().unique().tolist() if e != "NAN"])
+
 with col_input2:
-    selected_event = st.text_input("Adverse Event (MedDRA PT Term):", "MUCOSITIS").strip().upper()
+    if available_events:
+        selected_event = st.selectbox("Select Adverse Event (Reported MedDRA PT):", available_events)
+    else:
+        selected_event = st.text_input("Adverse Event (MedDRA PT Term):", "MUCOSITIS").strip().upper()
 
 st.divider()
 
-drug_df = df_faers[df_faers['Drug'] == selected_drug]
+# 3. Real-Time Disproportionality Computation
 a_raw = len(drug_df[drug_df['Adverse_Event'] == selected_event])
 b_raw = len(drug_df[drug_df['Adverse_Event'] != selected_event])
 c_raw, d_raw = 5, 500
@@ -49,6 +59,7 @@ ci_low = np.exp(np.log(ror) - 1.96 * se)
 ci_high = np.exp(np.log(ror) + 1.96 * se)
 is_signal = (prr >= 2.0 and a_raw >= 3 and ci_low > 1.0)
 
+# 4. Display 3 Pillars
 col1, col2, col3 = st.columns(3)
 with col1:
     st.subheader("1. Pharmacovigilance")
@@ -76,7 +87,8 @@ with col3:
     pm_records = df_pubmed[df_pubmed['Drug'].str.upper() == selected_drug] if not df_pubmed.empty else pd.DataFrame()
     st.write(f"**Citations Indexed:** `{len(pm_records)}`")
     if not pm_records.empty:
-        st.caption(f"**Top Citation:** {pm_records.iloc[0]['Title']}")
+        valid_titles = pm_records['Title'].dropna().tolist()
+        st.caption(f"**Top Citation:** {valid_titles[0] if valid_titles else 'Abstract available in full dossier'}")
 
 st.divider()
 st.info("💳 **Commercial Tier:** Audit-Ready Comprehensive Dossier — **€490.00** *(Stripe EUR Delivery Ready)*")
