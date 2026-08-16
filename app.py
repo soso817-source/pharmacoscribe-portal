@@ -14,6 +14,9 @@ st.set_page_config(
 
 # Google Analytics 4 (GA4)
 # Google Analytics 4 (GA4) with Parent URL Tracking
+import streamlit.components.v1 as components
+
+# Google Analytics 4 (GA4) Tracker
 ga_code = """
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RTD87BESY9"></script>
@@ -22,11 +25,7 @@ ga_code = """
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  // Configure GA4 with explicit page location to prevent iframe stripping
-  gtag('config', 'G-RTD87BESY9', {
-      'page_location': window.parent.location.href || window.location.href,
-      'send_page_view': true
-  });
+  gtag('config', 'G-RTD87BESY9');
 </script>
 """
 components.html(ga_code, height=0, width=0)
